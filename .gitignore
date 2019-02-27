@@ -1,0 +1,11 @@
+/Makefile.in
+/aclocal.m4
+/configure
+/autom4te.cache/
+/config-aux/
+/Makefile
+/avarice.spec
+/config.log
+/config.status
+/.cproject
+/.project

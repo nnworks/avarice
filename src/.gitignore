@@ -1,0 +1,8 @@
+/Makefile.in
+/autoconf.hin
+/autoconf.h
+/*.o
+/avarice
+/.deps/
+/Makefile
+/stamp-h1
