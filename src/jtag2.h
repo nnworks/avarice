@@ -48,21 +48,21 @@ class jtag2: public jtag
 
   public:
     jtag2(const char *dev, char *name, enum debugproto prot = PROTO_JTAG,
-	  bool is_dragon = false, bool nsrst = false,
+    bool is_dragon = false, bool nsrst = false,
           bool xmega = false):
       jtag(dev, name, is_dragon? EMULATOR_DRAGON: EMULATOR_JTAGICE) {
-	signedIn = debug_active = false;
-	command_sequence = 0;
-	devdescrlen = sizeof(jtag2_device_desc_type);
-	proto = prot;
-	apply_nSRST = nsrst;
+  signedIn = debug_active = false;
+  command_sequence = 0;
+  devdescrlen = sizeof(jtag2_device_desc_type);
+  proto = prot;
+  apply_nSRST = nsrst;
         is_xmega = xmega;
-	xmega_n_bps = 0;
-	flashCachePageAddr = (unsigned int)-1;
-	eepromCachePageAddr = (unsigned short)-1;
+  xmega_n_bps = 0;
+  flashCachePageAddr = (unsigned int)-1;
+  eepromCachePageAddr = (unsigned short)-1;
 
-	for (int j = 0; j < MAX_TOTAL_BREAKPOINTS2; j++)
-	  bp[j] = default_bp;
+  for (int j = 0; j < MAX_TOTAL_BREAKPOINTS2; j++)
+    bp[j] = default_bp;
         cached_pc_is_valid = false;
     };
     virtual ~jtag2(void);
@@ -142,26 +142,26 @@ class jtag2: public jtag
 
 
     bool sendJtagCommand(uchar *command, int commandSize, int &tries,
-			 uchar *&msg, int &msgsize, bool verify = true);
+       uchar *&msg, int &msgsize, bool verify = true);
 
     /** Send a command to the jtag, with retries, and return the
-	'responseSize' byte &response, response size in
-	&responseSize. If retryOnTimeout is true, retry the command
-	if no (positive or negative) response arrived in time, abort
-	after too many retries.
+  'responseSize' byte &response, response size in
+  &responseSize. If retryOnTimeout is true, retry the command
+  if no (positive or negative) response arrived in time, abort
+  after too many retries.
 
-	If a negative response arrived, throw an exception.
+  If a negative response arrived, throw an exception.
 
-	Caller must delete [] the response.
+  Caller must delete [] the response.
     **/
     void doJtagCommand(uchar *command, int  commandSize,
-		       uchar *&response, int &responseSize,
-		       bool retryOnTimeout = true) throw(jtag_exception);
+           uchar *&response, int &responseSize,
+           bool retryOnTimeout = true);
 
     /** Simplified form of doJtagCommand:
-	Send 1-byte command 'cmd' to JTAG ICE, with retries, expecting a
-	response that consists only of the status byte which must be
-	RSP_OK.
+  Send 1-byte command 'cmd' to JTAG ICE, with retries, expecting a
+  response that consists only of the status byte which must be
+  RSP_OK.
     **/
     void doSimpleJtagCommand(uchar cmd);
 
@@ -183,8 +183,8 @@ class jtag2: public jtag
     void updateBreakpintsDW(void);
 
     /** Wait until either the ICE or GDB issued an event.  As this is
-	the heart of jtagContinue for the mkII, it returns true when a
-	breakpoint was reached, and false for GDB input.
+  the heart of jtagContinue for the mkII, it returns true when a
+  breakpoint was reached, and false for GDB input.
      **/
     bool eventLoop(void);
 

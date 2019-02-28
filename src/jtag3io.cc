@@ -83,20 +83,20 @@ jtag3::~jtag3(void)
     {
       try
       {
-	doSimpleJtagCommand(CMD3_STOP_DEBUG, "stop debugging");
+  doSimpleJtagCommand(CMD3_STOP_DEBUG, "stop debugging");
       }
       catch (jtag_exception&)
       {
-	// just proceed with the sign-off
+  // just proceed with the sign-off
       }
 
       try
       {
-	doSimpleJtagCommand(CMD3_SIGN_OFF, "AVR sign-off");
+  doSimpleJtagCommand(CMD3_SIGN_OFF, "AVR sign-off");
       }
       catch (jtag_exception&)
       {
-	// just proceed with the sign-off
+  // just proceed with the sign-off
       }
     }
 
@@ -127,7 +127,7 @@ void jtag3::sendFrame(uchar *command, int commandSize)
     memcpy(buf + 4, command, commandSize);
 
     for (int i = 0; i < commandSize + 4; i++)
-	debugOut("%.2X ", buf[i]);
+  debugOut("%.2X ", buf[i]);
     debugOut("\n");
 
     int count = safewrite(buf, commandSize + 4);
@@ -237,29 +237,29 @@ int jtag3::recv(uchar *&msg)
     int rv;
 
     for (;;) {
-	if ((rv = recvFrame(msg, r_seqno)) <= 0)
-	    return rv;
-	debugOut("\nGot message seqno %d (command_sequence == %d)\n",
-		 r_seqno, command_sequence);
-	if (r_seqno == command_sequence) {
-	    if (++command_sequence == 0xffff)
-		command_sequence = 0;
-	    return rv;
-	}
-	if (r_seqno == 0xffff) {
-	    debugOut("\ngot asynchronous event: 0x%02x, 0x%02x\n",
-		     msg[0], msg[1]);
-	    if (cached_event == NULL)
-	    {
-	      cached_event = msg;
-	      // do *not* delete[] it here
-	      continue;
-	    }
-	} else {
-	    debugOut("\ngot wrong sequence number, %u != %u\n",
-		     r_seqno, command_sequence);
-	}
-	delete [] msg;
+  if ((rv = recvFrame(msg, r_seqno)) <= 0)
+      return rv;
+  debugOut("\nGot message seqno %d (command_sequence == %d)\n",
+     r_seqno, command_sequence);
+  if (r_seqno == command_sequence) {
+      if (++command_sequence == 0xffff)
+    command_sequence = 0;
+      return rv;
+  }
+  if (r_seqno == 0xffff) {
+      debugOut("\ngot asynchronous event: 0x%02x, 0x%02x\n",
+         msg[0], msg[1]);
+      if (cached_event == NULL)
+      {
+        cached_event = msg;
+        // do *not* delete[] it here
+        continue;
+      }
+  } else {
+      debugOut("\ngot wrong sequence number, %u != %u\n",
+         r_seqno, command_sequence);
+  }
+  delete [] msg;
     }
 }
 
@@ -276,7 +276,7 @@ int jtag3::recv(uchar *&msg)
 
 bool jtag3::sendJtagCommand(uchar *command, int commandSize,
                             const char *name,
-			    uchar *&msg, int &msgsize)
+          uchar *&msg, int &msgsize)
 {
     debugOut("\ncommand \"%s\" [0x%02x, 0x%02x]\n",
              name, command[0], command[1]);
@@ -285,19 +285,19 @@ bool jtag3::sendJtagCommand(uchar *command, int commandSize,
 
     msgsize = recv(msg);
     if (msgsize < 1)
-	return false;
+  return false;
 
     debugOut("response: ");
     for (int i = 0; i < msgsize; i++)
     {
-	debugOut("%.2X ", msg[i]);
+  debugOut("%.2X ", msg[i]);
     }
     debugOut("\n");
 
     unsigned char c = msg[1];
 
     if (c >= RSP3_OK && c < RSP3_FAILED)
-	return true;
+  return true;
 
     return false;
 }
@@ -306,7 +306,6 @@ bool jtag3::sendJtagCommand(uchar *command, int commandSize,
 void jtag3::doJtagCommand(uchar *command, int  commandSize,
                           const char *name,
                           uchar *&response, int &responseSize)
-    throw (jtag_exception)
 {
     int sizeseen = 0;
     uchar code = 0;
@@ -321,7 +320,6 @@ void jtag3::doJtagCommand(uchar *command, int  commandSize,
 }
 
 void jtag3::doSimpleJtagCommand(uchar command, const char *name, uchar scope)
-    throw (jtag_exception)
 {
     int dummy;
     uchar *replydummy, cmd[3];
@@ -334,21 +332,21 @@ void jtag3::doSimpleJtagCommand(uchar command, const char *name, uchar scope)
     // Send command until we get an OK response
     for (tries = 0; tries < 10; tries++)
     {
-	if (sendJtagCommand(cmd, 3, name, replydummy, dummy)) {
-	    if (replydummy == NULL)
-		throw jtag_io_exception();
-	    if (dummy < 3)
-		throw jtag_exception("Unexpected response size in doSimpleJtagCommand");
-	    if (replydummy[1] != RSP3_OK)
-	      {
-		if (replydummy[1] < RSP3_FAILED)
-		  throw jtag_exception("Unexpected positive reply in doSimpleJtagCommand");
-		else
-		  throw jtag_io_exception(dummy >= 4? replydummy[3]: 0);
-	      }
-	    delete [] replydummy;
-	    return;
-	}
+  if (sendJtagCommand(cmd, 3, name, replydummy, dummy)) {
+      if (replydummy == NULL)
+    throw jtag_io_exception();
+      if (dummy < 3)
+    throw jtag_exception("Unexpected response size in doSimpleJtagCommand");
+      if (replydummy[1] != RSP3_OK)
+        {
+    if (replydummy[1] < RSP3_FAILED)
+      throw jtag_exception("Unexpected positive reply in doSimpleJtagCommand");
+    else
+      throw jtag_io_exception(dummy >= 4? replydummy[3]: 0);
+        }
+      delete [] replydummy;
+      return;
+  }
     }
     throw jtag_exception("doSimpleJtagCommand(): too many failures");
 }
@@ -414,7 +412,7 @@ void jtag3::setDeviceDescriptor(jtag_device_def_type *dev)
   catch (jtag_exception& e)
   {
     fprintf(stderr, "JTAG ICE: Failed to set device description: %s\n",
-	    e.what());
+      e.what());
     throw;
   }
 }
@@ -437,7 +435,7 @@ void jtag3::startJtagLink(void)
 
   if (resp[1] != RSP3_INFO)
     debugOut("Unexpected positive response to get info: 0x%02x\n",
-	     resp[1]);
+       resp[1]);
   else if (respsize < 4)
     debugOut("Unexpected response size to get info: %d\n", respsize);
   else
@@ -452,7 +450,7 @@ void jtag3::startJtagLink(void)
 
   debugOut("ICE hardware version: %d\n", resp[3]);
   debugOut("ICE firmware version: %d.%02d (rel. %d)\n",
-	   resp[4], resp[5], (resp[6] | (resp[7] << 8)));
+     resp[4], resp[5], (resp[6] | (resp[7] << 8)));
 
   delete[] resp;
 
@@ -504,10 +502,10 @@ void jtag3::startJtagLink(void)
     if (proto == PROTO_JTAG)
     {
       debugOut("AVR sign-on responded with device ID = 0x%0X : Ver = 0x%0x : Device = 0x%0x : Manuf = 0x%0x\n",
-	       did,
-	       (did & 0xF0000000) >> 28,
-	       (did & 0x0FFFF000) >> 12,
-	       (did & 0x00000FFE) >> 1);
+         did,
+         (did & 0xF0000000) >> 28,
+         (did & 0x0FFFF000) >> 12,
+         (did & 0x00000FFE) >> 1);
 
       device_id = (did & 0x0FFFF000) >> 12;
     }
@@ -531,10 +529,10 @@ void jtag3::startJtagLink(void)
       delete [] resp;
 
       debugOut("Device ID = 0x%0X : Ver = 0x%0x : Device = 0x%0x : Manuf = 0x%0x\n",
-	       did,
-	       (did & 0xF0000000) >> 28,
-	       (did & 0x0FFFF000) >> 12,
-	       (did & 0x00000FFE) >> 1);
+         did,
+         (did & 0xF0000000) >> 28,
+         (did & 0x0FFFF000) >> 12,
+         (did & 0x00000FFE) >> 1);
 
       device_id = (did & 0x0FFFF000) >> 12;
     }
@@ -568,25 +566,25 @@ void jtag3::deviceAutoConfig(void)
       /* Read in the JTAG device ID to determine device */
 
       if (is_xmega)
-	{
-	  /*
-	   * Unfortunately, for Xmega devices, there's a
-	   * chicken-and-egg problem here.  Xmega devices connected
-	   * through JTAG should already have responded with a device
-	   * ID above, but those connected through PDI didn't, so the
-	   * last resort is to read the respective signature memory
-	   * area.  However, in order to do this, the JTAGICE3 needs a
-	   * valid device descriptor already. :-(
-	   *
-	   * Hopefully, the values below will remain constant for all
-	   * Xmega devices ...
-	   */
-	  jtag_device_def_type desc = { "dummy", 0 };
+  {
+    /*
+     * Unfortunately, for Xmega devices, there's a
+     * chicken-and-egg problem here.  Xmega devices connected
+     * through JTAG should already have responded with a device
+     * ID above, but those connected through PDI didn't, so the
+     * last resort is to read the respective signature memory
+     * area.  However, in order to do this, the JTAGICE3 needs a
+     * valid device descriptor already. :-(
+     *
+     * Hopefully, the values below will remain constant for all
+     * Xmega devices ...
+     */
+    jtag_device_def_type desc = { "dummy", 0 };
 
-	  u32_to_b4(desc.dev_desc3.nvm_data_offset, 0x1000000);
-	  u16_to_b2(desc.dev_desc3.mcu_base_addr, 0x90);
-	  setDeviceDescriptor(&desc);
-	}
+    u32_to_b4(desc.dev_desc3.nvm_data_offset, 0x1000000);
+    u16_to_b2(desc.dev_desc3.mcu_base_addr, 0x90);
+    setDeviceDescriptor(&desc);
+  }
 
       resp = jtagRead(SIG_SPACE_ADDR_OFFSET, 3);
       device_id = resp[2] | (resp[1] << 8);
@@ -697,7 +695,7 @@ void jtag3::initJtagBox(void)
     catch (jtag_exception& e)
     {
       fprintf(stderr, "initJtagBox() failed: %s\n",
-	    e.what());
+      e.what());
       throw;
     }
 }
@@ -717,9 +715,9 @@ void jtag3::initJtagOnChipDebugging(unsigned long bitrate)
     if (proto == PROTO_JTAG)
     {
       if (is_xmega)
-	param = PARM3_CLK_XMEGA_JTAG;
+  param = PARM3_CLK_XMEGA_JTAG;
       else
-	param = PARM3_CLK_MEGA_DEBUG;
+  param = PARM3_CLK_MEGA_DEBUG;
     }
     else if (proto == PROTO_PDI)
     {
@@ -751,12 +749,12 @@ void jtag3::initJtagOnChipDebugging(unsigned long bitrate)
     // resetProgram() runs into an error code 0x32.  Just retry it once.
     try
       {
-	resetProgram();
+  resetProgram();
       }
     catch (jtag_exception &e)
       {
-	debugOut("retrying reset ...\n");
-	resetProgram();
+  debugOut("retrying reset ...\n");
+  resetProgram();
       }
 
     cached_pc_is_valid = false;
@@ -767,13 +765,13 @@ void jtag3::configDaisyChain(void)
     unsigned char buf[4];
 
     if ((dchain.units_before > 0) ||
-	(dchain.units_after > 0) ||
-	(dchain.bits_before > 0) ||
-	(dchain.bits_after > 0) ){
-	buf[0] = dchain.units_before;
-	buf[1] = dchain.units_after;
-	buf[2] = dchain.bits_before;
-	buf[3] = dchain.bits_after;
-	setJtagParameter(SCOPE_AVR, 1, PARM3_JTAGCHAIN, buf, 4);
+  (dchain.units_after > 0) ||
+  (dchain.bits_before > 0) ||
+  (dchain.bits_after > 0) ){
+  buf[0] = dchain.units_before;
+  buf[1] = dchain.units_after;
+  buf[2] = dchain.bits_before;
+  buf[3] = dchain.bits_after;
+  setJtagParameter(SCOPE_AVR, 1, PARM3_JTAGCHAIN, buf, 4);
     }
 }

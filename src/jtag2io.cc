@@ -90,17 +90,17 @@ jtag2::~jtag2(void)
     // Terminate connection to JTAG box.
     if (signedIn)
       {
-	  try
-	  {
-	      if (debug_active)
-		  doSimpleJtagCommand(CMND_RESTORE_TARGET);
-	  }
-	  catch (jtag_exception&)
-	  {
-	      // just proceed with the sign-off
-	  }
-	  doSimpleJtagCommand(CMND_SIGN_OFF);
-	  signedIn = false;
+    try
+    {
+        if (debug_active)
+      doSimpleJtagCommand(CMND_RESTORE_TARGET);
+    }
+    catch (jtag_exception&)
+    {
+        // just proceed with the sign-off
+    }
+    doSimpleJtagCommand(CMND_SIGN_OFF);
+    signedIn = false;
       }
 }
 
@@ -143,8 +143,8 @@ void jtag2::sendFrame(uchar *command, int commandSize)
 int jtag2::recvFrame(unsigned char *&msg, unsigned short &seqno)
 {
     enum states {
-	sSTART, sSEQNUM1, sSEQNUM2, sSIZE1, sSIZE2, sSIZE3, sSIZE4,
-	sTOKEN, sDATA, sCSUM1, sCSUM2, sDONE
+  sSTART, sSEQNUM1, sSEQNUM2, sSIZE1, sSIZE2, sSIZE3, sSIZE4,
+  sTOKEN, sDATA, sCSUM1, sCSUM2, sDONE
     }  state = sSTART;
     unsigned int msglen = 0, l = 0;
     unsigned int headeridx = 0;
@@ -157,113 +157,113 @@ int jtag2::recvFrame(unsigned char *&msg, unsigned short &seqno)
     msg = NULL;
 
     while (state != sDONE) {
-	if (state == sDATA) {
-	    debugOut("sDATA: reading %d bytes\n", msglen);
-	    rv = 0;
-	    if (ignorpkt) {
-		/* skip packet's contents */
-		for(l = 0; l < msglen; l++) {
-		    rv += timeout_read(&c, 1, JTAG_RESPONSE_TIMEOUT);
-		    debugOut("ign: 0x%02x\n", c);
-		}
-	    } else {
-		rv += timeout_read(buf + 8, msglen, JTAG_RESPONSE_TIMEOUT);
-		debugOut("read: ");
-		for (l = 0; l < msglen; l++) {
-		    debugOut(" %02x", buf[l + 8]);
-		}
-		debugOut("\n");
-	    }
-	    if (rv == 0)
-		/* timeout */
-		break;
-	} else {
-	    rv = timeout_read(&c, 1, JTAG_RESPONSE_TIMEOUT);
-	    if (rv == 0) {
-		/* timeout */
-		debugOut("recv: timeout\n");
-		break;
-	    }
-	    debugOut("recv: 0x%02x\n", c);
-	}
-	checksum ^= c;
+  if (state == sDATA) {
+      debugOut("sDATA: reading %d bytes\n", msglen);
+      rv = 0;
+      if (ignorpkt) {
+    /* skip packet's contents */
+    for(l = 0; l < msglen; l++) {
+        rv += timeout_read(&c, 1, JTAG_RESPONSE_TIMEOUT);
+        debugOut("ign: 0x%02x\n", c);
+    }
+      } else {
+    rv += timeout_read(buf + 8, msglen, JTAG_RESPONSE_TIMEOUT);
+    debugOut("read: ");
+    for (l = 0; l < msglen; l++) {
+        debugOut(" %02x", buf[l + 8]);
+    }
+    debugOut("\n");
+      }
+      if (rv == 0)
+    /* timeout */
+    break;
+  } else {
+      rv = timeout_read(&c, 1, JTAG_RESPONSE_TIMEOUT);
+      if (rv == 0) {
+    /* timeout */
+    debugOut("recv: timeout\n");
+    break;
+      }
+      debugOut("recv: 0x%02x\n", c);
+  }
+  checksum ^= c;
 
-	if (state < sDATA)
-	    header[headeridx++] = c;
+  if (state < sDATA)
+      header[headeridx++] = c;
 
-	switch (state) {
-	case sSTART:
-	    if (c == MESSAGE_START) {
-		state = sSEQNUM1;
-	    } else {
-		headeridx = 0;
-	    }
-	    break;
-	case sSEQNUM1:
-	    r_seqno = c;
-	    state = sSEQNUM2;
-	    break;
-	case sSEQNUM2:
-	    r_seqno |= ((unsigned)c << 8);
-	    state = sSIZE1;
-	    break;
-	case sSIZE1:
-	    state = sSIZE2;
-	    goto domsglen;
-	case sSIZE2:
-	    state = sSIZE3;
-	    goto domsglen;
-	case sSIZE3:
-	    state = sSIZE4;
-	    goto domsglen;
-	case sSIZE4:
-	    state = sTOKEN;
-	  domsglen:
-	    msglen >>= 8;
-	    msglen |= ((unsigned)c << 24);
-	    break;
-	case sTOKEN:
-	    if (c == TOKEN) {
-		state = sDATA;
-		if (msglen > MAX_MESSAGE) {
-		    printf("msglen %u exceeds max message size %u, ignoring message\n",
-			   msglen, MAX_MESSAGE);
-		    state = sSTART;
-		    headeridx = 0;
-		} else {
-		    buf = new unsigned char[msglen + 10];
-		    memcpy(buf, header, 8);
-		}
-	    } else {
-		state = sSTART;
-		headeridx = 0;
-	    }
-	    break;
-	case sDATA:
-	    /* The entire payload has been read above. */
-	    l = msglen + 8;
-	    state = sCSUM1;
-	    break;
-	case sCSUM1:
-	    buf[l++] = c;
-	    state = sCSUM2;
-	    break;
-	case sCSUM2:
-	    buf[l++] = c;
-	    if (crcverify(buf, msglen + 10)) {
-		debugOut("CRC OK");
-		state = sDONE;
-	    } else {
-		debugOut("checksum error");
-		delete [] buf;
-		return -1;
-	    }
-	    break;
-	default:
-	    debugOut("unknown state");
-	    delete [] buf;
-	    return -1;
-	}
+  switch (state) {
+  case sSTART:
+      if (c == MESSAGE_START) {
+    state = sSEQNUM1;
+      } else {
+    headeridx = 0;
+      }
+      break;
+  case sSEQNUM1:
+      r_seqno = c;
+      state = sSEQNUM2;
+      break;
+  case sSEQNUM2:
+      r_seqno |= ((unsigned)c << 8);
+      state = sSIZE1;
+      break;
+  case sSIZE1:
+      state = sSIZE2;
+      goto domsglen;
+  case sSIZE2:
+      state = sSIZE3;
+      goto domsglen;
+  case sSIZE3:
+      state = sSIZE4;
+      goto domsglen;
+  case sSIZE4:
+      state = sTOKEN;
+    domsglen:
+      msglen >>= 8;
+      msglen |= ((unsigned)c << 24);
+      break;
+  case sTOKEN:
+      if (c == TOKEN) {
+    state = sDATA;
+    if (msglen > MAX_MESSAGE) {
+        printf("msglen %u exceeds max message size %u, ignoring message\n",
+         msglen, MAX_MESSAGE);
+        state = sSTART;
+        headeridx = 0;
+    } else {
+        buf = new unsigned char[msglen + 10];
+        memcpy(buf, header, 8);
+    }
+      } else {
+    state = sSTART;
+    headeridx = 0;
+      }
+      break;
+  case sDATA:
+      /* The entire payload has been read above. */
+      l = msglen + 8;
+      state = sCSUM1;
+      break;
+  case sCSUM1:
+      buf[l++] = c;
+      state = sCSUM2;
+      break;
+  case sCSUM2:
+      buf[l++] = c;
+      if (crcverify(buf, msglen + 10)) {
+    debugOut("CRC OK");
+    state = sDONE;
+      } else {
+    debugOut("checksum error");
+    delete [] buf;
+    return -1;
+      }
+      break;
+  default:
+      debugOut("unknown state");
+      delete [] buf;
+      return -1;
+  }
     }
 
     seqno = r_seqno;
@@ -282,34 +282,34 @@ int jtag2::recv(uchar *&msg)
     int rv;
 
     for (;;) {
-	if ((rv = recvFrame(msg, r_seqno)) <= 0)
-	    return rv;
-	debugOut("\nGot message seqno %d (command_sequence == %d)\n",
-		 r_seqno, command_sequence);
-	if (r_seqno == command_sequence) {
-	    if (++command_sequence == 0xffff)
-		command_sequence = 0;
-	    /*
-	     * We move the payload to the beginning of the buffer, to make
-	     * the job easier for the caller.  We have to return the
-	     * original pointer though, as the caller must free() it.
-	     */
-	    memmove(msg, msg + 8, rv);
-	    return rv;
-	}
-	if (r_seqno == 0xffff) {
-	    debugOut("\ngot asynchronous event: 0x%02x\n",
-		     msg[8]);
-	    // XXX should we queue that event up somewhere?
-	    // How to process it?  Register event handlers
-	    // for interesting events?
-	    // For now, the only place that cares is jtagContinue
-	    // and it just calls recvFrame and handles events directly. 
-	} else {
-	    debugOut("\ngot wrong sequence number, %u != %u\n",
-		     r_seqno, command_sequence);
-	}
-	delete [] msg;
+  if ((rv = recvFrame(msg, r_seqno)) <= 0)
+      return rv;
+  debugOut("\nGot message seqno %d (command_sequence == %d)\n",
+     r_seqno, command_sequence);
+  if (r_seqno == command_sequence) {
+      if (++command_sequence == 0xffff)
+    command_sequence = 0;
+      /*
+       * We move the payload to the beginning of the buffer, to make
+       * the job easier for the caller.  We have to return the
+       * original pointer though, as the caller must free() it.
+       */
+      memmove(msg, msg + 8, rv);
+      return rv;
+  }
+  if (r_seqno == 0xffff) {
+      debugOut("\ngot asynchronous event: 0x%02x\n",
+         msg[8]);
+      // XXX should we queue that event up somewhere?
+      // How to process it?  Register event handlers
+      // for interesting events?
+      // For now, the only place that cares is jtagContinue
+      // and it just calls recvFrame and handles events directly.
+  } else {
+      debugOut("\ngot wrong sequence number, %u != %u\n",
+         r_seqno, command_sequence);
+  }
+  delete [] msg;
     }
 }
 
@@ -327,7 +327,7 @@ int jtag2::recv(uchar *&msg)
 **/
 
 bool jtag2::sendJtagCommand(uchar *command, int commandSize, int &tries,
-			    uchar *&msg, int &msgsize, bool verify)
+          uchar *&msg, int &msgsize, bool verify)
 {
     if (tries++ >= MAX_JTAG_COMM_ATTEMPS)
         throw jtag_exception("JTAG communication failed");
@@ -335,7 +335,7 @@ bool jtag2::sendJtagCommand(uchar *command, int commandSize, int &tries,
     debugOut("\ncommand[0x%02x, %d]: ", command[0], tries);
 
     for (int i = 0; i < commandSize; i++)
-	debugOut("%.2X ", command[i]);
+  debugOut("%.2X ", command[i]);
 
     debugOut("\n");
 
@@ -345,68 +345,67 @@ bool jtag2::sendJtagCommand(uchar *command, int commandSize, int &tries,
     if (verify && msgsize == 0)
         throw jtag_exception("no response received");
     else if (msgsize < 1)
-	return false;
+  return false;
 
     debugOut("response: ");
     for (int i = 0; i < msgsize; i++)
     {
-	debugOut("%.2X ", msg[i]);
+  debugOut("%.2X ", msg[i]);
     }
     debugOut("\n");
 
     unsigned char c = msg[0];
 
     if (c >= RSP_OK && c < RSP_FAILED)
-	return true;
+  return true;
 
     return false;
 }
 
 
 void jtag2::doJtagCommand(uchar *command, int  commandSize,
-			  uchar *&response, int  &responseSize,
-			  bool retryOnTimeout)
-    throw (jtag_exception)
+        uchar *&response, int  &responseSize,
+        bool retryOnTimeout)
 {
     int sizeseen = 0;
     uchar code = 0;
 
     for (int tryCount = 0; tryCount < 8; tryCount++)
     {
-	if (sendJtagCommand(command, commandSize, tryCount, response, responseSize, false))
-	    return;
+  if (sendJtagCommand(command, commandSize, tryCount, response, responseSize, false))
+      return;
 
-	if (!retryOnTimeout)
-	{
-	    if (responseSize == 0)
-		throw jtag_timeout_exception();
-	    else
-		throw jtag_io_exception(response[0]);
-	}
+  if (!retryOnTimeout)
+  {
+      if (responseSize == 0)
+    throw jtag_timeout_exception();
+      else
+    throw jtag_io_exception(response[0]);
+  }
 
-	if (responseSize > 0 && response[0] > RSP_FAILED)
-	    // no point in retrying failures other than FAILED
-	    throw jtag_io_exception(response[0]);
+  if (responseSize > 0 && response[0] > RSP_FAILED)
+      // no point in retrying failures other than FAILED
+      throw jtag_io_exception(response[0]);
 
-	if (responseSize > 0)
-	{
-	    sizeseen = responseSize;
-	    code = response[0];
-	}
+  if (responseSize > 0)
+  {
+      sizeseen = responseSize;
+      code = response[0];
+  }
 
 #ifdef HAVE_LIBUSB
-	if (tryCount == 4 && responseSize == 0 && is_usb)
-	  {
-	    /* signal the USB daemon to reset the EPs */
-	    debugOut("Resetting EPs...\n");
-	    resetUSB();
-	  }
+  if (tryCount == 4 && responseSize == 0 && is_usb)
+    {
+      /* signal the USB daemon to reset the EPs */
+      debugOut("Resetting EPs...\n");
+      resetUSB();
+    }
 #endif
     }
     if (sizeseen > 0)
-	throw jtag_io_exception(code);
+  throw jtag_io_exception(code);
     else
-	throw jtag_timeout_exception();
+  throw jtag_timeout_exception();
 }
 
 void jtag2::doSimpleJtagCommand(uchar command)
@@ -417,16 +416,16 @@ void jtag2::doSimpleJtagCommand(uchar command)
     // Send command until we get an OK response
     for (;;)
     {
-	if (sendJtagCommand(&command, 1, tryCount, replydummy, dummy, false)) {
-	    if (replydummy == NULL)
-		throw jtag_io_exception();
-	    if (dummy != 1)
-		throw jtag_exception("Unexpected response size in doSimpleJtagCommand");
-	    if (replydummy[0] != RSP_OK)
-		throw jtag_io_exception(replydummy[0]);
-	    delete [] replydummy;
-	    return;
-	}
+  if (sendJtagCommand(&command, 1, tryCount, replydummy, dummy, false)) {
+      if (replydummy == NULL)
+    throw jtag_io_exception();
+      if (dummy != 1)
+    throw jtag_exception("Unexpected response size in doSimpleJtagCommand");
+      if (replydummy[0] != RSP_OK)
+    throw jtag_io_exception(replydummy[0]);
+      delete [] replydummy;
+      return;
+  }
     }
 }
 
@@ -443,20 +442,20 @@ void jtag2::changeBitRate(int newBitRate)
 
     switch (newBitRate) {
     case 9600:
-	jtagrate = PAR_BAUD_9600;
-	break;
+  jtagrate = PAR_BAUD_9600;
+  break;
     case 19200:
-	jtagrate = PAR_BAUD_19200;
-	break;
+  jtagrate = PAR_BAUD_19200;
+  break;
     case 38400:
-	jtagrate = PAR_BAUD_38400;
-	break;
+  jtagrate = PAR_BAUD_38400;
+  break;
     case 57600:
-	jtagrate = PAR_BAUD_57600;
-	break;
+  jtagrate = PAR_BAUD_57600;
+  break;
     case 115200:
-	jtagrate = PAR_BAUD_115200;
-	break;
+  jtagrate = PAR_BAUD_115200;
+  break;
     }
     setJtagParameter(PAR_BAUD_RATE, &jtagrate, 1);
     changeLocalBitRate(newBitRate);
@@ -470,9 +469,9 @@ void jtag2::setDeviceDescriptor(jtag_device_def_type *dev)
     int respSize;
 
     if (is_xmega && has_full_xmega_support)
-	command = (uchar *)&dev->dev_desc3;
+  command = (uchar *)&dev->dev_desc3;
     else
-	command = (uchar *)&dev->dev_desc2;
+  command = (uchar *)&dev->dev_desc2;
 
     try
     {
@@ -499,71 +498,71 @@ bool jtag2::synchroniseAt(int bitrate)
 
     while (tries < MAX_JTAG_SYNC_ATTEMPS)
     {
-	if (sendJtagCommand(&signoncmd, 1, tries, signonmsg, msgsize, false)) {
+  if (sendJtagCommand(&signoncmd, 1, tries, signonmsg, msgsize, false)) {
             if (signonmsg[0] != RSP_SIGN_ON || msgsize <= 17)
                 throw jtag_exception("Unexpected response to sign-on command");
-	    signonmsg[msgsize - 1] = '\0';
-	    statusOut("Found a device: %s\n", signonmsg + 16);
-	    statusOut("Serial number:  %02x:%02x:%02x:%02x:%02x:%02x\n",
-		   signonmsg[10], signonmsg[11], signonmsg[12],
-		   signonmsg[13], signonmsg[14], signonmsg[15]);
-	    debugOut("JTAG ICE mkII sign-on message:\n");
-	    debugOut("Communications protocol version: %u\n",
-		     (unsigned)signonmsg[1]);
-	    debugOut("M_MCU:\n");
-	    debugOut("  boot-loader FW version:        %u\n",
-		     (unsigned)signonmsg[2]);
-	    debugOut("  firmware version:              %u.%02u\n",
-		     (unsigned)signonmsg[4], (unsigned)signonmsg[3]);
-	    debugOut("  hardware version:              %u\n",
-		     (unsigned)signonmsg[5]);
-	    debugOut("S_MCU:\n");
-	    debugOut("  boot-loader FW version:        %u\n",
-		     (unsigned)signonmsg[6]);
-	    debugOut("  firmware version:              %u.%02u\n",
-		     (unsigned)signonmsg[8], (unsigned)signonmsg[7]);
-	    debugOut("  hardware version:              %u\n",
-		     (unsigned)signonmsg[9]);
+      signonmsg[msgsize - 1] = '\0';
+      statusOut("Found a device: %s\n", signonmsg + 16);
+      statusOut("Serial number:  %02x:%02x:%02x:%02x:%02x:%02x\n",
+       signonmsg[10], signonmsg[11], signonmsg[12],
+       signonmsg[13], signonmsg[14], signonmsg[15]);
+      debugOut("JTAG ICE mkII sign-on message:\n");
+      debugOut("Communications protocol version: %u\n",
+         (unsigned)signonmsg[1]);
+      debugOut("M_MCU:\n");
+      debugOut("  boot-loader FW version:        %u\n",
+         (unsigned)signonmsg[2]);
+      debugOut("  firmware version:              %u.%02u\n",
+         (unsigned)signonmsg[4], (unsigned)signonmsg[3]);
+      debugOut("  hardware version:              %u\n",
+         (unsigned)signonmsg[5]);
+      debugOut("S_MCU:\n");
+      debugOut("  boot-loader FW version:        %u\n",
+         (unsigned)signonmsg[6]);
+      debugOut("  firmware version:              %u.%02u\n",
+         (unsigned)signonmsg[8], (unsigned)signonmsg[7]);
+      debugOut("  hardware version:              %u\n",
+         (unsigned)signonmsg[9]);
 
-	    // The AVR Dragon always uses the full device descriptor.
-	    if (emu_type == EMULATOR_JTAGICE)
-	    {
-		unsigned short fwver = ((unsigned)signonmsg[8] << 8) | (unsigned)signonmsg[7];
+      // The AVR Dragon always uses the full device descriptor.
+      if (emu_type == EMULATOR_JTAGICE)
+      {
+    unsigned short fwver = ((unsigned)signonmsg[8] << 8) | (unsigned)signonmsg[7];
 
-		// Check the S_MCU firmware version to know which format
-		// of the device descriptor to send.
+    // Check the S_MCU firmware version to know which format
+    // of the device descriptor to send.
 #define FWVER(maj, min) ((maj << 8) | (min))
-		if (fwver < FWVER(3, 16)) {
-		    devdescrlen -= 2;
-		    fprintf(stderr,
-			    "Warning: S_MCU firmware version might be "
-			    "too old to work correctly\n ");
-		} else if (fwver < FWVER(4, 0)) {
-		    devdescrlen -= 2;
-		}
+    if (fwver < FWVER(3, 16)) {
+        devdescrlen -= 2;
+        fprintf(stderr,
+          "Warning: S_MCU firmware version might be "
+          "too old to work correctly\n ");
+    } else if (fwver < FWVER(4, 0)) {
+        devdescrlen -= 2;
+    }
 #undef FWVER
-	    }
+      }
 
-	    has_full_xmega_support = (unsigned)signonmsg[8] >= 7;
-	    if (is_xmega)
-	    {
-		if (has_full_xmega_support)
-		{
-		    devdescrlen = sizeof(xmega_device_desc_type);
-		}
-		else
-		{
-		    fprintf(stderr,
-			    "Warning, S_MCU firmware version (%u.%02u) too old to work "
-			    "correctly for Xmega devices, >= 7.x required\n",
-			    (unsigned)signonmsg[8], (unsigned)signonmsg[7]);
+      has_full_xmega_support = (unsigned)signonmsg[8] >= 7;
+      if (is_xmega)
+      {
+    if (has_full_xmega_support)
+    {
+        devdescrlen = sizeof(xmega_device_desc_type);
+    }
+    else
+    {
+        fprintf(stderr,
+          "Warning, S_MCU firmware version (%u.%02u) too old to work "
+          "correctly for Xmega devices, >= 7.x required\n",
+          (unsigned)signonmsg[8], (unsigned)signonmsg[7]);
                     softbp_only = true;
-		}
-	    }
+    }
+      }
 
-	    delete [] signonmsg;
-	    return true;
-	}
+      delete [] signonmsg;
+      return true;
+  }
     }
     return false;
 }
@@ -575,53 +574,53 @@ void jtag2::startJtagLink(void)
     { 19200, 115200, 57600, 38400, 9600 };
 
     for (unsigned int i = 0; i < sizeof bitrates / sizeof *bitrates; i++)
-	if (synchroniseAt(bitrates[i])) {
-	    uchar val;
+  if (synchroniseAt(bitrates[i])) {
+      uchar val;
 
-	    signedIn = true;
+      signedIn = true;
 
-	    if (proto == PROTO_JTAG && apply_nSRST) {
-		val = 0x01;
-		setJtagParameter(PAR_EXTERNAL_RESET, &val, 1);
-	    }
+      if (proto == PROTO_JTAG && apply_nSRST) {
+    val = 0x01;
+    setJtagParameter(PAR_EXTERNAL_RESET, &val, 1);
+      }
 
-	    const char *protoName = "unknown";
-	    switch (proto)
-	    {
-		case PROTO_JTAG:
-		    if (is_xmega)
-			val = EMULATOR_MODE_JTAG_XMEGA;
-		    else
-			val = EMULATOR_MODE_JTAG;
-		    protoName = "JTAG";
-		    break;
+      const char *protoName = "unknown";
+      switch (proto)
+      {
+    case PROTO_JTAG:
+        if (is_xmega)
+      val = EMULATOR_MODE_JTAG_XMEGA;
+        else
+      val = EMULATOR_MODE_JTAG;
+        protoName = "JTAG";
+        break;
 
-		case PROTO_DW:
-		    val = EMULATOR_MODE_DEBUGWIRE;
-		    protoName = "debugWIRE";
+    case PROTO_DW:
+        val = EMULATOR_MODE_DEBUGWIRE;
+        protoName = "debugWIRE";
                     softbp_only = true;
-		    break;
+        break;
 
-		case PROTO_PDI:
-		    val = EMULATOR_MODE_PDI;
-		    protoName = "PDI";
-		    break;
-	    }
-	    try
-	    {
-		setJtagParameter(PAR_EMULATOR_MODE, &val, 1);
-		debug_active = true;
-	    }
-	    catch (jtag_io_exception&)
-	    {
-		fprintf(stderr,
-			"Failed to activate %s debugging protocol\n",
-			protoName);
-		throw;
-	    }
+    case PROTO_PDI:
+        val = EMULATOR_MODE_PDI;
+        protoName = "PDI";
+        break;
+      }
+      try
+      {
+    setJtagParameter(PAR_EMULATOR_MODE, &val, 1);
+    debug_active = true;
+      }
+      catch (jtag_io_exception&)
+      {
+    fprintf(stderr,
+      "Failed to activate %s debugging protocol\n",
+      protoName);
+    throw;
+      }
 
-	    return;
-	}
+      return;
+  }
 
     throw jtag_exception("Failed to synchronise with the JTAG ICE (is it connected and powered?)");
 }
@@ -649,38 +648,38 @@ void jtag2::deviceAutoConfig(void)
     /* Read in the JTAG device ID to determine device */
     if (proto == PROTO_DW)
     {
-	getJtagParameter(PAR_TARGET_SIGNATURE, resp, respSize);
-	if (respSize < 3)
+  getJtagParameter(PAR_TARGET_SIGNATURE, resp, respSize);
+  if (respSize < 3)
             throw jtag_exception("Invalid response size to PAR_TARGET_SIGNATURE");
-	device_id = resp[1] | (resp[2] << 8);
-	delete [] resp;
+  device_id = resp[1] | (resp[2] << 8);
+  delete [] resp;
 
-	statusOut("Reported debugWire device ID: 0x%0X\n", device_id);
+  statusOut("Reported debugWire device ID: 0x%0X\n", device_id);
     }
     else if (proto == PROTO_PDI)
     {
-	resp = jtagRead(SIG_SPACE_ADDR_OFFSET, 3);
-	device_id = resp[2] | (resp[1] << 8);
-	delete [] resp;
+  resp = jtagRead(SIG_SPACE_ADDR_OFFSET, 3);
+  device_id = resp[2] | (resp[1] << 8);
+  delete [] resp;
 
-	statusOut("Reported PDI device ID: 0x%0X\n", device_id);
+  statusOut("Reported PDI device ID: 0x%0X\n", device_id);
     }
     else
     {
-	getJtagParameter(PAR_JTAGID, resp, respSize);
-	if (respSize < 5)
+  getJtagParameter(PAR_JTAGID, resp, respSize);
+  if (respSize < 5)
             throw jtag_exception("Invalid response size to PAR_TARGET_SIGNATURE");
-	device_id = resp[1] | (resp[2] << 8) | (resp[3] << 16) | resp[4] << 24;
-	delete [] resp;
+  device_id = resp[1] | (resp[2] << 8) | (resp[3] << 16) | resp[4] << 24;
+  delete [] resp;
 
-	debugOut("JTAG id = 0x%0X : Ver = 0x%0x : Device = 0x%0x : Manuf = 0x%0x\n",
-		 device_id,
-		 (device_id & 0xF0000000) >> 28,
-		 (device_id & 0x0FFFF000) >> 12,
-		 (device_id & 0x00000FFE) >> 1);
+  debugOut("JTAG id = 0x%0X : Ver = 0x%0x : Device = 0x%0x : Manuf = 0x%0x\n",
+     device_id,
+     (device_id & 0xF0000000) >> 28,
+     (device_id & 0x0FFFF000) >> 12,
+     (device_id & 0x00000FFE) >> 1);
 
-	device_id = (device_id & 0x0FFFF000) >> 12;
-	statusOut("Reported JTAG device ID: 0x%0X\n", device_id);
+  device_id = (device_id & 0x0FFFF000) >> 12;
+  statusOut("Reported JTAG device ID: 0x%0X\n", device_id);
     }
 
     if (device_name == 0)
@@ -791,13 +790,13 @@ void jtag2::initJtagOnChipDebugging(unsigned long bitrate)
     {
       uchar br;
       if (bitrate >= 6400000)
-	br = 0;
+  br = 0;
       else if (bitrate >= 2800000)
-	br = 1;
+  br = 1;
       else if (bitrate >= 20900)
-	br = (unsigned char)(5.35e6 / (double)bitrate);
+  br = (unsigned char)(5.35e6 / (double)bitrate);
       else
-	br = 255;
+  br = 255;
       // Set JTAG bitrate
       setJtagParameter(PAR_OCD_JTAG_CLK, &br, 1);
     }
@@ -829,13 +828,13 @@ void jtag2::configDaisyChain(void)
     unsigned char buf[4];
 
     if ((dchain.units_before > 0) ||
-	(dchain.units_after > 0) ||
-	(dchain.bits_before > 0) ||
-	(dchain.bits_after > 0) ){
-	buf[0] = dchain.units_before;
-	buf[1] = dchain.units_after;
-	buf[2] = dchain.bits_before;
-	buf[3] = dchain.bits_after;
-	setJtagParameter(PAR_DAISY_CHAIN_INFO, buf, 4);
+  (dchain.units_after > 0) ||
+  (dchain.bits_before > 0) ||
+  (dchain.bits_after > 0) ){
+  buf[0] = dchain.units_before;
+  buf[1] = dchain.units_after;
+  buf[2] = dchain.bits_before;
+  buf[3] = dchain.bits_after;
+  setJtagParameter(PAR_DAISY_CHAIN_INFO, buf, 4);
     }
 }

@@ -200,21 +200,21 @@ class jtag3: public jtag
 
   public:
     jtag3(const char *dev, char *name, enum debugproto prot = PROTO_JTAG,
-	  bool nsrst = false,
+    bool nsrst = false,
           bool xmega = false,
           bool edbg = false):
         jtag(dev, name, edbg? EMULATOR_EDBG: EMULATOR_JTAGICE3) {
-	signedIn = debug_active = false;
-	command_sequence = 0;
-	proto = prot;
-	apply_nSRST = nsrst;
+  signedIn = debug_active = false;
+  command_sequence = 0;
+  proto = prot;
+  apply_nSRST = nsrst;
         is_xmega = xmega;
-	xmega_n_bps = 0;
-	flashCachePageAddr = (unsigned int)-1;
-	eepromCachePageAddr = (unsigned short)-1;
+  xmega_n_bps = 0;
+  flashCachePageAddr = (unsigned int)-1;
+  eepromCachePageAddr = (unsigned short)-1;
 
-	for (int j = 0; j < MAX_TOTAL_BREAKPOINTS2; j++)
-	  bp[j] = default_bp;
+  for (int j = 0; j < MAX_TOTAL_BREAKPOINTS2; j++)
+    bp[j] = default_bp;
         cached_pc_is_valid = false;
         appsize = 0;
         device_id = 0;
@@ -299,27 +299,27 @@ class jtag3: public jtag
 
     bool sendJtagCommand(uchar *command, int commandSize,
                          const char *name,
-			 uchar *&msg, int &msgsize);
+       uchar *&msg, int &msgsize);
 
     /** Send a command to the jtag, and return the
-	'responseSize' byte &response, response size in
-	&responseSize.
+  'responseSize' byte &response, response size in
+  &responseSize.
 
-	If a negative response arrived, throw an exception.
+  If a negative response arrived, throw an exception.
 
-	Caller must delete [] the response.
+  Caller must delete [] the response.
     **/
     void doJtagCommand(uchar *command, int  commandSize,
                        const char *name,
-		       uchar *&response, int &responseSize) throw(jtag_exception);
+           uchar *&response, int &responseSize);
 
     /** Simplified form of doJtagCommand:
-	Send 1-byte command 'cmd' to JTAG ICE, expecting a
-	response that consists only of the status byte which must be
-	RSP_OK.
+  Send 1-byte command 'cmd' to JTAG ICE, expecting a
+  response that consists only of the status byte which must be
+  RSP_OK.
     **/
     void doSimpleJtagCommand(uchar cmd, const char *name,
-                             uchar scope = SCOPE_AVR) throw(jtag_exception);
+                             uchar scope = SCOPE_AVR);
 
     // Miscellaneous
     // -------------
@@ -341,8 +341,8 @@ class jtag3: public jtag
     void updateBreakpintsDW(void);
 
     /** Wait until either the ICE or GDB issued an event.  As this is
-	the heart of jtagContinue for the mkII, it returns true when a
-	breakpoint was reached, and false for GDB input.
+  the heart of jtagContinue for the mkII, it returns true when a
+  breakpoint was reached, and false for GDB input.
      **/
     bool eventLoop(void);
 
